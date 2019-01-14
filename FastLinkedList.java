@@ -26,76 +26,6 @@ public class FastLinkedList implements Iterable{
         currentPos = 0;
     }
 
-//    public void addChar(String s) {
-//        //TODO: pass fontName and Size to this method. ReadChar has default font type and size
-//        double xPos;
-//        double yPos;
-//        Text et = new Text(0, 0, "a");
-//        et.setTextOrigin(VPos.TOP);
-//        et.setFont(Font.font("Verdana", 20));
-//        double benchmarkHeight = Math.round(et.getLayoutBounds().getHeight());
-//
-//        if (s.charAt(0) == '\n') {
-//            // handle RETURN character
-//            // When reading a new file, place \n at the beginning of next line
-//            xPos = 5;
-//            yPos = currentNode.content.getY() + benchmarkHeight;
-//        } else {
-//            xPos = currentNode.content.getX() + currentNode.getWidth();
-//            yPos = currentNode.content.getY();
-//        }
-//
-//        Text text = new Text(xPos, yPos, s);
-//        text.setTextOrigin(VPos.TOP);
-//        text.setFont(Font.font("Verdana", 20));
-//        Node newNode = new Node(text);
-//
-//        // add the new node into linked list
-//        newNode.next = currentNode.next;
-//        currentNode.next.prev = newNode;
-//        newNode.prev = currentNode;
-//        currentNode.next = newNode;
-//
-//        currentNode = newNode;
-//        currentPos += 1;
-//
-//        if (s.equals("\n")) {
-//            // currentNode is '\n', startNode/tempNode is the node right after cursor
-//            Node startNode = currentNode.getNextNode();
-//            double benchmarkX = startNode.getContent().getX();
-//            double benchmarkY = startNode.getContent().getY();
-//
-//            Node tempNode = startNode;
-//            // characters after the cursor go to next line
-//            while (tempNode != sentinel && tempNode.getContent().getText().charAt(0) != '\n') {
-//
-//                Text t = tempNode.getContent();
-//                // the difference between current text position and benchmark text is text.getX() - benchmarkX
-//                t.setX(t.getX() - benchmarkX + 5);
-//                t.setY(benchmarkY + benchmarkHeight);
-//
-//                tempNode = tempNode.getNextNode();
-//            }
-//
-//            // characters below go to next line
-//            while (tempNode != sentinel) {
-//                Text t = tempNode.getContent();
-//                t.setY(t.getY() + benchmarkHeight);
-//                tempNode = tempNode.getNextNode();
-//            }
-//        } else {
-//            // handle positions of rest characters in single line
-//            Node temp = currentNode.next;
-//            double addedWidth = newNode.getWidth();
-//            while (temp != sentinel && temp.getContent().getText().charAt(0) != '\n') {
-//                double originalX = temp.getContent().getX();
-//                temp.getContent().setX(originalX + addedWidth);
-//                //temp.getContent().setY(yPos);
-//                temp = temp.next;
-//            }
-//        }
-//    }
-
     public void addChar(String s, String fontName, int fontSize) {
         //TODO: bug in addChar when press BACK SPACE for a RETURN
         double xPos;
@@ -132,10 +62,12 @@ public class FastLinkedList implements Iterable{
         currentPos += 1;
 
         if (currentNode.getContent().getText().equals("\n")) {
+
             // currentNode is '\n', startNode/tempNode is the node right after cursor
             double benchmarkX;
             double benchmarkY;
             Node startNode = currentNode.getNextNode();
+            // Check if it is the last character of the file
             if (startNode != sentinel) {
                 // If it is not reading a new file
                 benchmarkX = startNode.getContent().getX();
@@ -144,7 +76,7 @@ public class FastLinkedList implements Iterable{
                 Node tempNode = startNode;
                 // characters after the cursor go to next line
                 double wholeWordWidth = 0;
-                while (tempNode != sentinel && tempNode.equals(snal.get(line))) {
+                while (tempNode != sentinel && !tempNode.equals(snal.get(line))) {
 
                     Text t = tempNode.getContent();
                     // the difference between current text position and benchmark text is text.getX() - benchmarkX
@@ -170,12 +102,16 @@ public class FastLinkedList implements Iterable{
                     t.setY(t.getY() + benchmarkHeight);
                     tempNode = tempNode.getNextNode();
                 }
+
+                snal.addNode(currentNode, line);
+
+                // TODO: wordWrapToPreviousLine()
             } else {
                 // When reading a new file, next node is sentinel, benchmarkY is should be different.
                 benchmarkY = currentNode.getContent().getY() - benchmarkHeight;
+                snal.addNode(currentNode, line);
             }
 
-            snal.addNode(currentNode, line);
         } else {
             // handle positions of rest characters in single line
             Node temp = currentNode.next;
@@ -189,13 +125,21 @@ public class FastLinkedList implements Iterable{
                 //temp.getContent().setY(yPos);
                 temp = temp.next;
             }
-            //TODO: check word wrap here
-            wordWrap(benchmarkHeight);
+
+            while (line <= snal.getNumberOfLines()) {
+                wordWrapToNextLine(line, benchmarkHeight);
+                line += 1;
+            }
         }
     }
 
-    /** Delete character before the cursor, which is currentNode */
+    /**
+     * Delete character before the cursor, which is currentNode
+     * @param benchmarkHeight
+     * @return
+     */
     public String deleteChar(double benchmarkHeight) {
+        // TODO: removeNode
         if (currentNode == sentinel) {
             return null;
         }
@@ -240,28 +184,28 @@ public class FastLinkedList implements Iterable{
         currentNode = currentNode.prev;
         currentPos -= 1;
 
-        // WHY??? When I didn't set removedNode as null, I need to press BACK SPACE twice to remove a \n
-        String removedContent = removedNode.getContent().getText();
-        removedNode = null;
-
-        return removedContent;
+        return removedNode.getContent().getText();
     }
 
-    private void wordWrap(double benchmarkHeight) {
+    /**
+     *
+     * @param line stands for the next line of currentPosition
+     * @param benchmarkHeight
+     */
+    //TODO: can be changed to boolean
+    private void wordWrapToNextLine(int line, double benchmarkHeight) {
         // TODO: some place should add addNode function.
         // TODO: pass window width, height
         Node lastNodeOfCurrentLine;
         double windowWidth = 500;
-        int nextLine = (int) (currentContent().getY() / benchmarkHeight) + 1;
 
-        // Cascade word wrapping
-        while (nextLine <= snal.getNumberOfLines()) {
+        if (currentNode.next != sentinel) {
 
             // Check if cursor is in the last line
-            if (nextLine == snal.getNumberOfLines()) {
+            if (line == snal.getNumberOfLines()) {
                 lastNodeOfCurrentLine = sentinel.getPrevNode();
             } else {
-                lastNodeOfCurrentLine =  snal.get(nextLine).getPrevNode();
+                lastNodeOfCurrentLine =  snal.get(line).getPrevNode();
             }
 
             Node node = lastNodeOfCurrentLine;
@@ -275,21 +219,24 @@ public class FastLinkedList implements Iterable{
             double rightEdgeX = node.getContent().getX() + node.getWidth();
 
             if (rightEdgeX > windowWidth - 10) {
-                while (!node.getContent().getText().equals(" ")) {
+
+                while(true) {
+                    // Maybe two words need to be wrapped
                     node = node.getPrevNode();
+                    rightEdgeX = node.getContent().getX() + node.getWidth();
+                    if (rightEdgeX <= windowWidth - 10 && node.getContent().getText().equals(" ")) {
+                        break;
+                    }
                 }
-                //TODO: node is space right now. Cursor position should be updated.
+
                 Node startNode = node.getNextNode();
                 node = startNode;
                 double benchmarkX = startNode.getContent().getX();
                 double benchmarkY = startNode.getContent().getY();
 
-//                startNode.getContent().setX(5);
-//                startNode.getContent().setY(benchmarkY + benchmarkHeight);
-
                 // Whole word go to new line
                 double wholeWordWidth = 0;
-                while (node != sentinel && !node.equals(snal.get(nextLine))) {
+                while (node != sentinel && !node.equals(snal.get(line))) {
 
                     Text t = node.getContent();
                     // the difference between current text position and benchmark text is text.getX() - benchmarkX
@@ -302,26 +249,79 @@ public class FastLinkedList implements Iterable{
 
                 // Right go right
                 // characters after the word go right
-                while (node != sentinel && node.getContent().getText().charAt(0) != '\n') {
+                Node checkNode = node;
+                // Move the characters in the same line(getY), and the startnode of next line is not \n. If it is \n, it shouldn't go right, instead it should go down.
+                while (node != sentinel && node.getContent().getY() == benchmarkY + benchmarkHeight && snal.get(line).getContent().getText().charAt(0) != '\n') {
 
                     Text t = node.getContent();
                     // the difference between current text position and benchmark text is text.getX() - benchmarkX
                     t.setX(t.getX() + wholeWordWidth);
-//                    t.setY(benchmarkY + benchmarkHeight);
 
                     node = node.getNextNode();
                 }
 
-                if (nextLine < snal.getNumberOfLines()) {
-                    snal.replaceNode(nextLine, startNode);
+                // all rest lines go one line down
+                if (node != sentinel && snal.get(line).getContent().getText().charAt(0) == '\n') {
+                    while (node != sentinel) {
+
+                        Text t = node.getContent();
+                        t.setY(t.getY() + benchmarkHeight);
+                        node = node.getNextNode();
+                    }
+                    snal.addNode(startNode, line);
+                    return;
+                }
+
+                //TODO: bug maybe
+                if (checkNode != sentinel && checkNode.getContent().getText().charAt(0) != '\n') {
+                    snal.replaceNode(line, startNode);
+                    return;
                 } else {
-                    snal.addNode(startNode, nextLine);
+                    snal.addNode(startNode, line);
+                    return;
+                }
+
+            }
+            return;
+        } else {
+            //TODO: exceed width, go to next line, addNode
+            Node node = currentNode;
+            if (currentNode.getContent().getText().equals(" ")) {
+                // If there are a lot of whitespaces at the end of line, get the last character that is not whitespace in the line.
+                while (node.getContent().getText().equals(" ")) {
+                    node = node.getPrevNode();
                 }
             }
 
-            nextLine += 1;
-        }
+            double rightEdgeX = node.getContent().getX() + node.getWidth();
 
+            if (rightEdgeX > windowWidth - 10) {
+                while (!node.getContent().getText().equals(" ")) {
+                    node = node.getPrevNode();
+                }
+
+                Node startNode = node.getNextNode();
+                node = startNode;
+                double benchmarkX = startNode.getContent().getX();
+                double benchmarkY = startNode.getContent().getY();
+
+                // Whole word go to new line
+//                double wholeWordWidth = 0;
+                while (node != sentinel) {
+
+                    Text t = node.getContent();
+                    // the difference between current text position and benchmark text is text.getX() - benchmarkX
+                    t.setX(t.getX() - benchmarkX + 5);
+                    t.setY(benchmarkY + benchmarkHeight);
+//                    wholeWordWidth += node.getWidth();
+
+                    node = node.getNextNode();
+                }
+
+                snal.addNode(startNode, line);
+            }
+
+        }
     }
 
     public int getCurrentPos() {
@@ -348,6 +348,7 @@ public class FastLinkedList implements Iterable{
         if (currentNode.getContent().getText().equals("\r")) {
             currentNode = currentNode.prev.prev;
             currentPos -= 2;
+            return;
         }
         currentNode = currentNode.prev;
         currentPos -= 1;
@@ -358,9 +359,10 @@ public class FastLinkedList implements Iterable{
         if (currentNode.next == sentinel) {
             return;
         }
-        if (currentNode.getContent().getText().equals("\r")) {
+        if (currentNode.getNextNode().getContent().getText().equals("\r")) {
             currentNode = currentNode.next.next;
             currentPos += 2;
+            return;
         }
         currentNode = currentNode.next;
         currentPos += 1;
@@ -436,7 +438,7 @@ public class FastLinkedList implements Iterable{
                 // The second half elements move to one position afterwards
                 // [9#-----*]
 //                if (firstPointer < lastPointer && lastPointer < items.length - 1) {
-                if (size - index < lastPointer) {
+                if (size - index <= lastPointer) {
                     //  [----*123235#---] [1#-------*]
                     System.arraycopy(items, realIndex, items, realIndex + 1, size - index);
                     items[realIndex] = n;
@@ -455,14 +457,14 @@ public class FastLinkedList implements Iterable{
                 if (index < items.length - firstPointer - 1) {
                     // [----*13242#----] [123453#-----*312]
                     System.arraycopy(items, plusOne(firstPointer), items, firstPointer, index);
-                    items[realIndex] = n;
+                    items[minusOne(realIndex)] = n;
                 } else {
                     //  [13242---------]  [123453-------312]
                     // move elements before items[0], then move rest
                     System.arraycopy(items, plusOne(firstPointer), items, firstPointer, size - lastPointer);
                     items[items.length - 1] = items[0];
                     System.arraycopy(items, 1, items, 0, realIndex);
-                    items[realIndex] = n;
+                    items[minusOne(realIndex)] = n;
                 }
                 firstPointer = minusOne(firstPointer);
             }
@@ -518,6 +520,7 @@ public class FastLinkedList implements Iterable{
         }
 
         private void resize(int capacity){
+            System.out.println(capacity);
             if (capacity > 7) {
                 Node[] a = new Node[capacity];
 
@@ -623,40 +626,40 @@ public class FastLinkedList implements Iterable{
     }
 
 //    @Test
-    public void testArrayList() {
-        StartNodeArrayList snal = new StartNodeArrayList();
-        Node n1 = new Node("1");Node n2 = new Node("2");Node n3 = new Node("3");Node n4 = new Node("4");Node n5 = new Node("5");Node n6 = new Node();
-        snal.addNode(n1, 0);
-        snal.addNode(n2, 1);
-        snal.addNode(n3, 2);
-        Node n0 = snal.get(0);
-        snal.addNode(n4, 3);
-        snal.addNode(n5, 0);
-        snal.addNode(n2, 0);
-        snal.addNode(n3, 0);
-        snal.addNode(n4, 0);
-        snal.addNode(n4, 0);
-        snal.addNode(n4, 0);
-        snal.addNode(n4, 0);
-        snal.addNode(n4, 0);
-        snal.addNode(n4, 0);
-        snal.addNode(n4, 0);
-        snal.addNode(n4, 0);
-        snal.addNode(n4, 0);
-        n6 = snal.removeNode(10);
-        n6 = snal.removeNode(8);
-        n6 = snal.removeNode(5);
-        n6 = snal.removeNode(3);
-        n6 = snal.removeNode(2);
-        n6 = snal.removeNode(2);
-        n6 = snal.removeNode(2);
-        n6 = snal.removeNode(2);
-        n6 = snal.removeNode(0);
-        n6 = snal.removeNode(0);
-        n6 = snal.removeNode(0);
-        n6 = snal.removeNode(0);
-        n6 = snal.removeNode(0);
-        n6 = snal.removeNode(0);
-        n6 = snal.removeNode(0);
-    }
+//    public void testArrayList() {
+//        StartNodeArrayList snal = new StartNodeArrayList();
+//        Node n1 = new Node("1");Node n2 = new Node("2");Node n3 = new Node("3");Node n4 = new Node("4");Node n5 = new Node("5");Node n6 = new Node();
+//        snal.addNode(n1, 0);
+//        snal.addNode(n2, 1);
+//        snal.addNode(n3, 2);
+//        Node n0 = snal.get(0);
+//        snal.addNode(n4, 3);
+//        snal.addNode(n5, 0);
+//        snal.addNode(n2, 0);
+//        snal.addNode(n3, 0);
+//        snal.addNode(n4, 0);
+//        snal.addNode(n4, 0);
+//        snal.addNode(n4, 0);
+//        snal.addNode(n4, 0);
+//        snal.addNode(n4, 0);
+//        snal.addNode(n4, 0);
+//        snal.addNode(n4, 0);
+//        snal.addNode(n4, 0);
+//        snal.addNode(n4, 0);
+//        n6 = snal.removeNode(10);
+//        n6 = snal.removeNode(8);
+//        n6 = snal.removeNode(5);
+//        n6 = snal.removeNode(3);
+//        n6 = snal.removeNode(2);
+//        n6 = snal.removeNode(2);
+//        n6 = snal.removeNode(2);
+//        n6 = snal.removeNode(2);
+//        n6 = snal.removeNode(0);
+//        n6 = snal.removeNode(0);
+//        n6 = snal.removeNode(0);
+//        n6 = snal.removeNode(0);
+//        n6 = snal.removeNode(0);
+//        n6 = snal.removeNode(0);
+//        n6 = snal.removeNode(0);
+//    }
 }

@@ -1,12 +1,10 @@
-//TODO: bug in adding two sentinel
-//TODO: word wrapping -> It is possible other lines has a alphabet start node
-//TODO: cascade for wrapping
 //TODO: removeNode in list
 //TODO: delete char -> wrap
 //TODO: scroll bar
 //TODO: move up and down
 //TODO: mouse click
 //TODO: undo and redo
+//TODO: resizing window
 package editor;
 
 import java.io.*;
@@ -109,6 +107,7 @@ public class Editor extends Application {
                     }
 
                 } else if (code == KeyCode.ENTER) {
+                    //TODO: several RETURN
                     textBuffer.addChar(String.valueOf('\n'), fontName, fontSize);
                     root.getChildren().add(textBuffer.currentContent());
                     moveCursor();
