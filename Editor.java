@@ -5,6 +5,8 @@
 //TODO: mouse click
 //TODO: undo and redo
 //TODO: resizing window
+//TODO: one line word
+//TODO: resize font
 package editor;
 
 import java.io.*;
@@ -107,7 +109,6 @@ public class Editor extends Application {
                     }
 
                 } else if (code == KeyCode.ENTER) {
-                    //TODO: several RETURN
                     textBuffer.addChar(String.valueOf('\n'), fontName, fontSize);
                     root.getChildren().add(textBuffer.currentContent());
                     moveCursor();
@@ -259,7 +260,7 @@ public class Editor extends Application {
                 int intRead = -1;
                 while ((intRead = bufferedReader.read()) != -1) {
                     char charRead = (char) intRead;
-                    //TODO: if char == \r continue
+                    // If char == \r continue
                     if (charRead == '\r') {
                         continue;
                     }

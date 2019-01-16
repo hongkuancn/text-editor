@@ -113,6 +113,7 @@ public class FastLinkedList implements Iterable{
             }
 
         } else {
+
             // handle positions of rest characters in single line
             Node temp = currentNode.next;
             double addedWidth = newNode.getWidth();
@@ -124,6 +125,20 @@ public class FastLinkedList implements Iterable{
                 temp.getContent().setX(originalX + addedWidth);
                 //temp.getContent().setY(yPos);
                 temp = temp.next;
+            }
+
+            if (currentContent().getText().equals(" ")) {
+                int currentLine = (int) (currentContent().getY() / benchmarkHeight);
+                if (currentLine != 0) {
+
+                    boolean wrapOrNot = wordWrapToPreviousLine(currentLine, benchmarkHeight);
+                    if (wrapOrNot) {
+                        while (currentLine <= snal.getNumberOfLines()) {
+                            wordWrapToNextLine(currentLine, benchmarkHeight);
+                            currentLine += 1;
+                        }
+                    }
+                }
             }
 
             while (line <= snal.getNumberOfLines()) {
@@ -139,7 +154,6 @@ public class FastLinkedList implements Iterable{
      * @return
      */
     public String deleteChar(double benchmarkHeight) {
-        // TODO: removeNode
         if (currentNode == sentinel) {
             return null;
         }
@@ -147,37 +161,90 @@ public class FastLinkedList implements Iterable{
         currentNode.prev.next = currentNode.next;
         currentNode.next.prev = currentNode.prev;
 
-        if (currentContent().getText().equals("\n")) {
+        if (currentContent().getText().equals("\n") || removedNode.equals(snal.get((int) (removedNode.getContent().getY() / benchmarkHeight)))) {
             double benchmarkX = currentContent().getX();
             double benchmarkY = currentContent().getY();
             double previousLineRightSide = currentNode.prev.getContent().getX() + currentNode.prev.getWidth();
 
-            Node tempNode = currentNode.next;
+            Node node = currentNode.next;
             // characters after the cursor go to next line
-            while (tempNode != sentinel && tempNode.getContent().getText().charAt(0) != '\n') {
+            while (node != sentinel && node.getContent().getText().charAt(0) != '\n') {
 
-                Text t = tempNode.getContent();
+                Text t = node.getContent();
                 // the difference between current text position and benchmark text is text.getX() - benchmarkX
                 t.setX(t.getX() - benchmarkX + previousLineRightSide);
                 t.setY(benchmarkY - benchmarkHeight);
 
-                tempNode = tempNode.getNextNode();
+                node = node.getNextNode();
             }
 
-            // characters below go to next line
-            while (tempNode != sentinel) {
-                Text t = tempNode.getContent();
+            // characters below go to above line
+            while (node != sentinel) {
+                Text t = node.getContent();
                 t.setY(t.getY() - benchmarkHeight);
-                tempNode = tempNode.getNextNode();
+                node = node.getNextNode();
+            }
+
+            int line = (int) (removedNode.getContent().getY() / benchmarkHeight);
+            snal.removeNode(line);
+
+            while (line <= snal.getNumberOfLines()) {
+                wordWrapToNextLine(line, benchmarkHeight);
+                line += 1;
             }
         } else {
+
             // handle characters in a single line
             Node temp = currentNode.next;
             double reducedWidth = currentNode.getWidth();
-            while (temp != sentinel && temp.getContent().getText().charAt(0) != '\n') {
+            while (temp != sentinel && temp.getContent().getY() == removedNode.getContent().getY()) {
                 double originalX = temp.getContent().getX();
                 temp.getContent().setX(originalX - reducedWidth);
                 temp = temp.next;
+            }
+
+            int line = (int) (removedNode.getContent().getY() / benchmarkHeight);
+            if (line != 0) {
+
+                if (snal.get(line).getContent().getText().equals("\n")) {
+                    // only need to check back part
+                    boolean wrapOrNot = wordWrapToPreviousLine(line + 1, benchmarkHeight);
+                    if (wrapOrNot) {
+
+                        while (line <= snal.getNumberOfLines()) {
+                            wordWrapToNextLine(line, benchmarkHeight);
+                            line += 1;
+                        }
+                    }
+                } else {
+                    boolean wrapOrNot = wordWrapToPreviousLine(line, benchmarkHeight);
+                    if (wrapOrNot) {
+
+                        while (line - 1 <= snal.getNumberOfLines()) {
+                            wordWrapToNextLine(line - 1, benchmarkHeight);
+                            line += 1;
+                        }
+                    } else {
+                        boolean wrapOrNot2 = wordWrapToPreviousLine(line + 1, benchmarkHeight);
+                        if (wrapOrNot2) {
+
+                            while (line <= snal.getNumberOfLines()) {
+                                wordWrapToNextLine(line, benchmarkHeight);
+                                line += 1;
+                            }
+                        }
+                    }
+                }
+            } else {
+                // line == 0 no need to check front part
+                boolean wrapOrNot = wordWrapToPreviousLine(line + 1, benchmarkHeight);
+                if (wrapOrNot) {
+
+                    while (line <= snal.getNumberOfLines()) {
+                        wordWrapToNextLine(line, benchmarkHeight);
+                        line += 1;
+                    }
+                }
             }
         }
 
@@ -187,14 +254,112 @@ public class FastLinkedList implements Iterable{
         return removedNode.getContent().getText();
     }
 
+
+//    private void wordWrapToPreviousLine(int line, double benchmarkHeight) {
+//        double windowWidth = 500;
+//        Node startNode = snal.get(line);
+//        Node lastNodeOfPreviousLine = startNode.prev;
+//        double rightEdgeX = lastNodeOfPreviousLine.getWidth() + lastNodeOfPreviousLine.getContent().getX();
+//        double rightEdgeY = lastNodeOfPreviousLine.getContent().getY();
+//        double availableSpace = windowWidth - rightEdgeX - 5;
+//        Node node = startNode;
+//
+//        double wordWidth = 0;
+//        while (!node.getContent().getText().equals(" ")) {
+//            wordWidth += node.getWidth();
+//            node = node.getNextNode();
+//        }
+//
+//        if (wordWidth <= availableSpace) {
+//            while (node.getContent().getText().equals(" ")) {
+//                wordWidth += node.getWidth();
+//                node = node.getNextNode();
+//            }
+//
+//            Node testNode = startNode;
+////            && temp.getContent().getY()
+//            while (testNode.getContent().getY() == rightEdgeY + benchmarkHeight) {
+//                Text t = testNode.getContent();
+//                t.setX(t.getX() + rightEdgeX - 5);
+//                t.setY(t.getY() - benchmarkHeight);
+//                testNode = testNode.next;
+//            }
+//
+//            snal.removeNode(line);
+////            snal.replaceNode(line, testNode);
+//
+////            // characters go left
+////            while (testNode.getContent().getY() == rightEdgeY + benchmarkHeight) {
+////                Text t = testNode.getContent();
+////                t.setX(t.getX() - wordWidth);
+////                testNode = testNode.next;
+////            }
+//
+//            while (testNode != sentinel) {
+//                Text t = testNode.getContent();
+//                t.setY(t.getY() - benchmarkHeight);
+//                testNode = testNode.getNextNode();
+//            }
+//        }
+//    }
+
+    private boolean wordWrapToPreviousLine(int line, double benchmarkHeight) {
+        double windowWidth = 500;
+        Node startNode = snal.get(line);
+        Node lastNodeOfPreviousLine = startNode.prev;
+        double rightEdgeX = lastNodeOfPreviousLine.getWidth() + lastNodeOfPreviousLine.getContent().getX();
+        double rightEdgeY = lastNodeOfPreviousLine.getContent().getY();
+        double availableSpace = windowWidth - rightEdgeX - 5;
+        Node node = startNode;
+
+        double wordWidth = 0;
+        while (!node.getContent().getText().equals(" ") && !node.getContent().getText().equals("\n")) {
+            wordWidth += node.getWidth();
+            node = node.getNextNode();
+        }
+
+        if (wordWidth != 0 && wordWidth <= availableSpace) {
+            while (node.getContent().getText().equals(" ")) {
+                wordWidth += node.getWidth();
+                node = node.getNextNode();
+            }
+
+            Node testNode = startNode;
+//            && temp.getContent().getY()
+            while (testNode.getContent().getY() == rightEdgeY + benchmarkHeight) {
+                Text t = testNode.getContent();
+                t.setX(t.getX() + rightEdgeX - 5);
+                t.setY(t.getY() - benchmarkHeight);
+                testNode = testNode.next;
+            }
+
+            snal.removeNode(line);
+//            snal.replaceNode(line, testNode);
+
+//            // characters go left
+//            while (testNode.getContent().getY() == rightEdgeY + benchmarkHeight) {
+//                Text t = testNode.getContent();
+//                t.setX(t.getX() - wordWidth);
+//                testNode = testNode.next;
+//            }
+
+            while (testNode != sentinel) {
+                Text t = testNode.getContent();
+                t.setY(t.getY() - benchmarkHeight);
+                testNode = testNode.getNextNode();
+            }
+            return true;
+        }
+        return false;
+    }
+
+
     /**
      *
      * @param line stands for the next line of currentPosition
      * @param benchmarkHeight
      */
-    //TODO: can be changed to boolean
     private void wordWrapToNextLine(int line, double benchmarkHeight) {
-        // TODO: some place should add addNode function.
         // TODO: pass window width, height
         Node lastNodeOfCurrentLine;
         double windowWidth = 500;
@@ -218,13 +383,13 @@ public class FastLinkedList implements Iterable{
 
             double rightEdgeX = node.getContent().getX() + node.getWidth();
 
-            if (rightEdgeX > windowWidth - 10) {
+            if (rightEdgeX > windowWidth - 5) {
 
                 while(true) {
                     // Maybe two words need to be wrapped
                     node = node.getPrevNode();
                     rightEdgeX = node.getContent().getX() + node.getWidth();
-                    if (rightEdgeX <= windowWidth - 10 && node.getContent().getText().equals(" ")) {
+                    if (rightEdgeX <= windowWidth - 5 && node.getContent().getText().equals(" ")) {
                         break;
                     }
                 }
@@ -295,7 +460,7 @@ public class FastLinkedList implements Iterable{
 
             double rightEdgeX = node.getContent().getX() + node.getWidth();
 
-            if (rightEdgeX > windowWidth - 10) {
+            if (rightEdgeX > windowWidth - 5) {
                 while (!node.getContent().getText().equals(" ")) {
                     node = node.getPrevNode();
                 }
@@ -421,7 +586,7 @@ public class FastLinkedList implements Iterable{
             firstPointer = 0;
             lastPointer = 1;
         }
-        //TODO: replace node
+
         public void replaceNode(int index, Node n) {
             items[(firstPointer + index + 1) % items.length] = n;
         }
